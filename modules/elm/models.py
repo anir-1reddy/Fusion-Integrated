@@ -1,12 +1,9 @@
 """
 ELM Database Models.
-Initial generation by Qwen2.5-Coder:14B.
+Adapted for Fusion cross-module boundaries with integer user references.
 """
 
 from django.db import models
-from django.contrib.auth import get_user_model
-
-User = get_user_model()
 
 
 class LeaveType(models.Model):
@@ -21,14 +18,14 @@ class LeaveType(models.Model):
 
 
 class LeaveBalance(models.Model):
-    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="elm_balances")
+    user_id = models.IntegerField(db_index=True)
     leave_type = models.ForeignKey(LeaveType, on_delete=models.CASCADE)
     year = models.IntegerField(default=2026)
     credited = models.DecimalField(max_digits=5, decimal_places=1, default=0.0)
     availed = models.DecimalField(max_digits=5, decimal_places=1, default=0.0)
 
     class Meta:
-        unique_together = ("user", "leave_type", "year")
+        unique_together = ("user_id", "leave_type", "year")
 
     @property
     def remaining(self):
@@ -46,7 +43,7 @@ class LeaveApplication(models.Model):
         ("WITHDRAWN", "Withdrawn"),
     ]
 
-    applicant = models.ForeignKey(User, on_delete=models.CASCADE, related_name="elm_applications")
+    applicant_id = models.IntegerField(db_index=True)
     leave_type = models.ForeignKey(LeaveType, on_delete=models.PROTECT)
     start_date = models.DateField()
     end_date = models.DateField()
@@ -59,12 +56,12 @@ class LeaveApplication(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
 
     def __str__(self):
-        return f"Leave {self.id} by {self.applicant_id} ({self.status})"
+        return f"Leave {self.id} by user {self.applicant_id} ({self.status})"
 
 
 class SubstituteNomination(models.Model):
     application = models.ForeignKey(LeaveApplication, on_delete=models.CASCADE, related_name="substitutes")
-    substitute = models.ForeignKey(User, on_delete=models.CASCADE, related_name="elm_substitute_roles")
+    substitute_id = models.IntegerField(db_index=True)
     duties_description = models.TextField()
     accepted = models.BooleanField(null=True, blank=True)
     response_date = models.DateTimeField(null=True, blank=True)
